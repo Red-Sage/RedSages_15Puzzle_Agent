@@ -37,16 +37,20 @@ class Agent_Q_Learning(abs_agent.AbsAgent):
 
         episodes = 1
         max_episodes = self.max_episodes
+        max_moves = 2000
+        moves = 0
 
         while episodes <= max_episodes:
 
             action = self.epsilon_action()
             self.take_action_and_update_q(action)
+            moves += 1
 
-            if self.puzzle.is_complete:
+            if self.puzzle.is_complete or moves > max_moves:
                 self.convergence.append([episodes, self.puzzle.score])
                 self.puzzle = PuzzleBoard.get_random_board()
                 episodes += 1
+                moves = 0
 
     def take_action_and_update_q(self, action):
         # Helper to perform q update
@@ -91,7 +95,7 @@ class Agent_Q_Learning(abs_agent.AbsAgent):
         k = self.k_epsilon
 
         if self.state_visits[state_id] > self.max_training_visits:
-            action = np.nanargmax(self.q[state_id])
+            action = np.nanargmax(actions)
         else:
             epsilon = (k/(k + self.state_visits[state_id]))*self.epsilon_init
             random_value = np.random.rand()
@@ -105,78 +109,76 @@ class Agent_Q_Learning(abs_agent.AbsAgent):
                 action = np.nanargmax(actions)
 
         return action
-
+    
     @property
     def state_id(self):
 
-        board = self.puzzle.board
-
-        if self.puzzle.get_tile_loc(board, 1) != (0, 0):
+        if self.puzzle.get_tile_loc(1) != (0, 0):
             # Phase 1
-            loc1 = self.puzzle.get_tile_loc(board, 1)
-            loc16 = self.puzzle.get_tile_loc(board, 16)
+            loc1 = self.puzzle.get_tile_loc(1)
+            loc16 = self.puzzle.get_tile_loc(16)
             state_tuple = (*loc1, *loc16, 1)
 
-        elif self.puzzle.get_tile_loc(board, 2) != (0, 1):
+        elif self.puzzle.get_tile_loc(2) != (0, 1):
             # Phase 2
 
-            loc2 = self.puzzle.get_tile_loc(board, 2)
-            loc16 = self.puzzle.get_tile_loc(board, 16)
+            loc2 = self.puzzle.get_tile_loc(2)
+            loc16 = self.puzzle.get_tile_loc(16)
             state_tuple = (*loc2, *loc16, 2)
 
-        elif self.puzzle.get_tile_loc(board, 3) != (0, 2) or self.puzzle.get_tile_loc(board, 4) != (0, 3):
+        elif self.puzzle.get_tile_loc(3) != (0, 2) or self.puzzle.get_tile_loc(4) != (0, 3):
             # Phase 3
 
-            loc3 = self.puzzle.get_tile_loc(board, 3)
-            loc4 = self.puzzle.get_tile_loc(board, 4)
-            loc16 = self.puzzle.get_tile_loc(board, 16)
+            loc3 = self.puzzle.get_tile_loc(3)
+            loc4 = self.puzzle.get_tile_loc(4)
+            loc16 = self.puzzle.get_tile_loc(16)
             state_tuple = (*loc3, *loc4, *loc16, 3)
 
-        elif self.puzzle.get_tile_loc(board, 5) != (1, 0):
+        elif self.puzzle.get_tile_loc(5) != (1, 0):
             # Phase 4
 
-            loc5 = self.puzzle.get_tile_loc(board, 5)
-            loc16 = self.puzzle.get_tile_locboard, (16)
+            loc5 = self.puzzle.get_tile_loc(5)
+            loc16 = self.puzzle.get_tile_loc(16)
             state_tuple = (*loc5, *loc16, 4)
 
-        elif self.puzzle.get_tile_loc(board, 6) != (1, 1):
+        elif self.puzzle.get_tile_loc(6) != (1, 1):
             # Phase 5
 
-            loc6 = self.puzzle.get_tile_loc(board, 6)
-            loc16 = self.puzzle.get_tile_loc(board, 16)
+            loc6 = self.puzzle.get_tile_loc(6)
+            loc16 = self.puzzle.get_tile_loc(16)
             state_tuple = (*loc6, *loc16, 5)
 
-        elif self.puzzle.get_tile_loc(board, 7) != (1, 2) or self.puzzle.get_tile_loc(board, 8) != (1, 3):
+        elif self.puzzle.get_tile_loc(7) != (1, 2) or self.puzzle.get_tile_loc(8) != (1, 3):
             # Phase 6
 
-            loc7 = self.puzzle.get_tile_loc(board, 7)
-            loc8 = self.puzzle.get_tile_loc(board, 8)
-            loc16 = self.puzzle.get_tile_loc(board, 16)
+            loc7 = self.puzzle.get_tile_loc(7)
+            loc8 = self.puzzle.get_tile_loc(8)
+            loc16 = self.puzzle.get_tile_loc(16)
             state_tuple = (*loc7, *loc8, *loc16, 6)
 
-        elif self.puzzle.get_tile_loc(board, 9) != (2, 0) or self.puzzle.get_tile_loc(board, 13) != (3, 0):
+        elif self.puzzle.get_tile_loc(9) != (2, 0) or self.puzzle.get_tile_loc(13) != (3, 0):
             # Phase 7
 
-            loc9 = self.puzzle.get_tile_loc(board, 9)
-            loc13 = self.puzzle.get_tile_locboard, (13)
-            loc16 = self.puzzle.get_tile_loc(board, 16)
+            loc9 = self.puzzle.get_tile_loc(9)
+            loc13 = self.puzzle.get_tile_loc(13)
+            loc16 = self.puzzle.get_tile_loc(16)
             state_tuple = (*loc9, *loc13, *loc16, 7)
 
-        elif self.puzzle.get_tile_loc(board, 10) != (board, 2, 1) or self.puzzle.get_tile_loc(board, 14) != (3, 1):
+        elif self.puzzle.get_tile_loc(10) != (2, 1) or self.puzzle.get_tile_loc(14) != (3, 1):
             # Phase 8
 
-            loc10 = self.puzzle.get_tile_loc(board, 10)
-            loc14 = self.puzzle.get_tile_loc(board, 14)
-            loc16 = self.puzzle.get_tile_loc(board, 16)
+            loc10 = self.puzzle.get_tile_loc(10)
+            loc14 = self.puzzle.get_tile_loc(14)
+            loc16 = self.puzzle.get_tile_loc(16)
             state_tuple = (*loc10, *loc14, *loc16, 8)
 
         else:
             # Phase 9
 
-            loc11 = self.puzzle.get_tile_loc(board, 11)
-            loc12 = self.puzzle.get_tile_loc(board, 12)
-            loc15 = self.puzzle.get_tile_loc(board, 15)
-            loc16 = self.puzzle.get_tile_loc(board, 16)
+            loc11 = self.puzzle.get_tile_loc(11)
+            loc12 = self.puzzle.get_tile_loc(12)
+            loc15 = self.puzzle.get_tile_loc(15)
+            loc16 = self.puzzle.get_tile_loc(16)
             state_tuple = (*loc11, *loc12, *loc15, *loc16, 9)
 
         if state_tuple not in self.state_dict:
@@ -289,6 +291,7 @@ class Agent_Q_Learning(abs_agent.AbsAgent):
                 moves = json.load(f)
 
             # First train on example game
+            '''
             try:
                 self.puzzle = PuzzleBoard.get_this_board(init_array)
             except ValueError as e:
@@ -297,7 +300,7 @@ class Agent_Q_Learning(abs_agent.AbsAgent):
 
             for action in moves:
                 self.take_action_and_update_q(action)
-
+            '''
             try:
                 self.puzzle = PuzzleBoard.get_this_board(init_array)
             except ValueError as e:
@@ -364,5 +367,7 @@ class Agent_Q_Learning(abs_agent.AbsAgent):
             with open(state_path.resolve(), 'rb') as f:
                 self.state_dict = pickle.load(f)
 
-    def predict(self):
+    def predict(self, board):
+        # Takes a board and returns a the predicted move
         pass
+
