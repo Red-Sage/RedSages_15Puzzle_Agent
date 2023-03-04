@@ -1,7 +1,7 @@
 from importlib.resources import path
 from re import T
-import abs_agent
-from redsages_15puzzle.puzzle15 import PuzzleBoard
+from . import abs_agent
+from .redsages_15puzzle.puzzle15 import PuzzleBoard
 import numpy as np
 import collections
 import msvcrt
@@ -25,12 +25,12 @@ class Agent_Q_Learning(abs_agent.AbsAgent):
         # Set some default values
         self.print_steps = False
         self.max_episodes = 2000
-        self.max_training_visits = 1e8
-        self.k_alpha = 1e8
-        self.k_epsilon = 1e8
-        self.gamma = .95
-        self.epsilon_init = 0.2
-        self.alpha_init = .1
+        self.max_training_visits = 1e5
+        self.k_alpha = 5e4
+        self.k_epsilon = 1000
+        self.gamma = .96
+        self.epsilon_init = .1
+        self.alpha_init = .25
 
     def train(self):
         # Multi phase training
@@ -254,8 +254,8 @@ class Agent_Q_Learning(abs_agent.AbsAgent):
         unique_id = datetime.now().strftime('%m%d%Y%H%M%S')
         moves_file = pathlib.Path(unique_id + '.moves.json')
         init_state_file = pathlib.Path(unique_id + '.init.json')
-        moves_path = pathlib.Path().cwd() / 'training_examples' / moves_file
-        init_state_path = pathlib.Path().cwd() / 'training_examples' / init_state_file
+        moves_path = pathlib.Path(__file__).parent.absolute() / 'training_examples' / moves_file
+        init_state_path = pathlib.Path(__file__).parent.absolute() / 'training_examples' / init_state_file
 
         with open(moves_path, 'w', encoding='utf-8') as f:
             json.dump(move_log, f)
@@ -266,7 +266,7 @@ class Agent_Q_Learning(abs_agent.AbsAgent):
     def train_on_examples(self, num_repeats, max_moves=1000):
         # Perform initial training on examples
 
-        training_path = pathlib.Path().cwd() / 'training_examples'
+        training_path = pathlib.Path(__file__).parent.absolute() / 'training_examples'
 
         all_files = training_path.glob('*.json')
         all_ids = []
@@ -281,12 +281,12 @@ class Agent_Q_Learning(abs_agent.AbsAgent):
 
         for count, id in enumerate(unique_ids):
 
-            init_path = pathlib.Path().cwd() / f'training_examples/{id}.init.json'
+            init_path = pathlib.Path(__file__).parent.absolute() / f'training_examples/{id}.init.json'
             with open(init_path) as f:
                 init_array = json.load(f)
                 init_array = np.array(init_array)
 
-            moves_path = pathlib.Path().cwd() / f'training_examples/{id}.moves.json'
+            moves_path = pathlib.Path(__file__).parent.absolute() / f'training_examples/{id}.moves.json'
             with open(moves_path) as f:
                 moves = json.load(f)
 
@@ -333,8 +333,9 @@ class Agent_Q_Learning(abs_agent.AbsAgent):
     def save_training(self):
         # Save the current state of the training
 
-        q_file = pathlib.Path().cwd() / 'q.json'
-        state_dict_file = pathlib.Path().cwd() / 'state_dict.pkl'
+        q_file = pathlib.Path(__file__).parent.absolute() / 'q.json'
+        state_dict_file = pathlib.Path(__file__).parent.absolute() / 'state_dict.pkl'
+        state_visits_file = pathlib.Path(__file__).parent.absolute() / 'state_visits.json'
 
         with open(q_file, 'w', encoding='utf-8') as f:
             json.dump(self.q.tolist(), f)
@@ -342,18 +343,23 @@ class Agent_Q_Learning(abs_agent.AbsAgent):
         with open(state_dict_file, 'wb') as f:
             pickle.dump(self.state_dict, f)
 
-    def load_q_table(self, q_file_input=None, state_file_input=None):
+        with open(state_visits_file, 'w', encoding='utf-8') as f:
+            json.dump(self.state_visits.tolist(), f)
+
+    def load_q_table(self, q_file_input=None, state_file_input=None, state_visits_input=None):
         # This method loads existing q tables and associated state dicts
 
         # Load default files. The files must be loaded in mathing pairs.
-        if q_file_input is None and state_file_input is None:
-            q_file_input = pathlib.Path().cwd / 'q.json'
-            state_file_input = pathlib.Path().cwd() / 'state_dict.pkl'
+        if q_file_input is None and state_file_input is None and state_visits_input is None:
+            q_file_input = pathlib.Path(__file__).parent.absolute() / 'q.json'
+            state_file_input = pathlib.Path(__file__).parent.absolute() / 'state_dict.pkl'
+            state_visits_path = pathlib.Path(__file__).parent.absolute() / 'state_visits.json'
         elif (q_file_input is None) ^ (state_file_input is None):
 
-            raise ValueError('Files must be loaded in pairs. You must specify'
-                             + 'both q_file_input and state_file_input'
-                             + 'or neither.'
+            raise ValueError('Files must be loaded in sets of three.'
+                             + 'You must specify q_file_input,'
+                             + ' state_file_input and state_visits_input'
+                             + 'or none of them to load the default.'
                              )
 
         q_path = pathlib.Path(q_file_input)
@@ -362,10 +368,20 @@ class Agent_Q_Learning(abs_agent.AbsAgent):
         if q_path.exists():
             with open(q_path.resolve(), 'r') as f:
                 self.q = json.load(f)
+        else:
+            raise FileNotFoundError('The specifed file does not exist.')
 
         if state_path.exists():
             with open(state_path.resolve(), 'rb') as f:
                 self.state_dict = pickle.load(f)
+        else:
+            raise FileNotFoundError('The specified file does not exist.')
+
+        if state_visits_path.exists():
+            with open(state_visits_path.resolve(), 'r') as f:
+                self.state_visits = json.load(f)
+        else:
+            raise FileNotFoundError('The specified file does not exist.')
 
     def predict(self, board):
         # Takes a board and returns a the predicted move
